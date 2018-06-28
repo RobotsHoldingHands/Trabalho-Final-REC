@@ -6,6 +6,9 @@ from TCP import TCP_em_UDP
 
 tcp = TCP_em_UDP()
 sock, conn = tcp.abrir_conexao('127.0.0.1', 3883)
+if not sock:
+	exit()
+
 while True:
 	dados = raw_input(">>")
 	if dados == 'end':

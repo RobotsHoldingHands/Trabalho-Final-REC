@@ -8,7 +8,7 @@ import json
 class Pacote():
 	def __init__(self):
 		self.conteudo = {}
-		self.conteudo['porta_orig'] = self.conteudo['porta_dest'] = self.conteudo['rwnd'] = self.conteudo['seq'] = self.conteudo['ack_n'] = self.conteudo['header'] = None
+		self.conteudo['porta_orig'] = self.conteudo['porta_dest'] = self.conteudo['seq'] = self.conteudo['ack_n'] = self.conteudo['RTT'] = None
 		self.conteudo['flags'] = {'ack': 0, 'syn': 0, 'fin': 0}
 		self.conteudo['dados'] = ''
 
@@ -18,3 +18,19 @@ class Pacote():
 				self.conteudo['flags'][str(modificacao[0])] = modificacao[1]
 			else:
 				self.conteudo[str(modificacao[0])] = modificacao[1]
+
+	def gera_check_sum(self):
+		pacote = ''
+		for chave, valor in self.conteudo.items():
+			pacote += str(valor)
+
+		soma = 0
+		for i in range((0), len(pacote) - 1, 2):
+			op1 = ord(pacote[i])
+			op2 = ord(pacote[i+1]) << 8
+
+			soma_atual = op1 + op2
+
+			soma = ((soma + soma_atual) & 0xffff) + ((soma + soma_atual) >> 16)
+
+		return soma
