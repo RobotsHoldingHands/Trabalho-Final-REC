@@ -21,7 +21,7 @@ class Pacote():
 
 	def gera_check_sum(self):
 		pacote = ''
-		for chave, valor in self.conteudo.items():
+		for chave, valor in list(self.conteudo.items()):
 			pacote += str(valor)
 
 		soma = 0

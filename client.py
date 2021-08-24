@@ -10,7 +10,7 @@ if not sock:
 	exit()
 
 while True:
-	dados = raw_input(">>")
+	dados = input(">>")
 	if dados == 'end':
 		break
 	

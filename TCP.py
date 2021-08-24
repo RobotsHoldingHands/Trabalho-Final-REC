@@ -48,7 +48,7 @@ class TCP_em_UDP():
 				['RTT', time.time()]
 			])
 		raw_pacote = json.dumps(pacote.conteudo)
-		print "Tentando se conectar a %s:%d." % (ip, porta)
+		print("Tentando se conectar a %s:%d." % (ip, porta))
 		# Enviando requisição SYN
 		self.sock.sendto(raw_pacote, tupla_conn)
 		self.sock.settimeout(5.0)
@@ -59,12 +59,12 @@ class TCP_em_UDP():
 				break
 			except:
 				self.sock.sendto(raw_pacote, tupla_conn)
-				print "Não houve resposta do servidor, tentando novamente."
+				print("Não houve resposta do servidor, tentando novamente.")
 				
-		print "Pacote de resposta recebido."
+		print("Pacote de resposta recebido.")
 		pacote.conteudo = json.loads(raw_pacote)
 		if pacote.conteudo['flags']['syn'] and pacote.conteudo['flags']['ack']:
-			print "O servidor enviou SYN ACK. Enviando ACK."
+			print("O servidor enviou SYN ACK. Enviando ACK.")
 			self.timeout = min(8, pacote.conteudo['RTT'])
 			self.sock.settimeout(self.timeout)
 			# Caso haja resposta o RTT é calculado e além disso uma resposta é gerada e enviada
@@ -79,19 +79,19 @@ class TCP_em_UDP():
 				])
 			raw_pacote = json.dumps(pacote.conteudo)
 			self.sock.sendto(raw_pacote, tupla_conn)
-			print "Conexão Estabelecida."
+			print("Conexão Estabelecida.")
 			
 			# O socket e as informações de conexão são retornadas para o client
 			return self.sock, tupla_conn
 		else:
 			# Caso o servidor rejeite a conexão há uma opção de tentar novamente ou abandonar a conexão
-			print "O servidor não quis estabelecer conexão."
-			print "Tentar novamente? [S/n]"
-			if raw_input().lower() == "n":
-				print "Adeus."
+			print("O servidor não quis estabelecer conexão.")
+			print("Tentar novamente? [S/n]")
+			if input().lower() == "n":
+				print("Adeus.")
 				return False
 			else:
-				print "Tentando novamente..."
+				print("Tentando novamente...")
 				self.abrir_conexao(ip, porta)
 
 
@@ -104,13 +104,13 @@ class TCP_em_UDP():
 		
 		# Caso os dados sejam maiores que o MSS o pacote será segmentado
 		if (len(dados) >= self.MSS):
-			print "O pacote é muito grande e será (provavelmente) dividido em", len(dados)//self.MSS + 1, "segmentos."
+			print("O pacote é muito grande e será (provavelmente) dividido em", len(dados)//self.MSS + 1, "segmentos.")
 			self.cria_segmentos(dados, porta)
 		else:
 			self.multiplexacao(dados, porta)
 
 		if not self.buffer:
-			print "O buffer está vazio."
+			print("O buffer está vazio.")
 		else:
 			# Loop de envio e recebimento dos dados
 			while self.indiceBuffer < len(self.buffer):
@@ -130,7 +130,7 @@ class TCP_em_UDP():
 					cont += 1
 					pacotes_enviados += 1
 
-				print cont, "segmentos enviados."
+				print(cont, "segmentos enviados.")
 
 				cont = 0
 				# Loop de recebimento dos dados
@@ -140,7 +140,7 @@ class TCP_em_UDP():
 							raw_pacote, conn = self.sock.recvfrom(self.MTU)
 							break
 						except:
-							print "Timeout, iniciando a partida lenta"
+							print("Timeout, iniciando a partida lenta")
 							self.ssthresh = self.cwnd * self.MSS/2
 							self.exponencial = True
 							self.cwnd = 1
@@ -154,8 +154,8 @@ class TCP_em_UDP():
 							self.ack += len(pacote.conteudo['dados'])
 							self.timeout = min(8, pacote.conteudo['RTT'])
 							self.sock.settimeout(self.timeout)
-							print "Novo valor de timeout:", self.timeout
-							print "ACK do pacote final recebido."
+							print("Novo valor de timeout:", self.timeout)
+							print("ACK do pacote final recebido.")
 							if self.exponencial:
 								self.cwnd = self.cwnd * 2
 							else:
@@ -171,7 +171,7 @@ class TCP_em_UDP():
 									if self.buffer[i]['seq'] == pacote.conteudo['ack_n'] - 1:
 										self.indiceBuffer = i
 										break
-								print "3 ACKs duplicados. Fast Recovery."
+								print("3 ACKs duplicados. Fast Recovery.")
 								self.listaACKs = []
 							else:
 								if self.exponencial:
@@ -188,14 +188,14 @@ class TCP_em_UDP():
 								['RTT', time.time()]			
 							])
 						self.buffer.append(pacote.conteudo)
-						print "Esse pacote não era esperado, enviando ACK."
+						print("Esse pacote não era esperado, enviando ACK.")
 		
 					cont += 1
 
 	# Verifica se há 3 ACKs duplicados e retorna verdadeiro ou falso
 	def checaACKs(self):
 		acks_duplicados = Counter(self.listaACKs)
-		for key, value in acks_duplicados.items():
+		for key, value in list(acks_duplicados.items()):
 			if value >= 3:
 				return True
 
@@ -244,7 +244,7 @@ class TCP_em_UDP():
 	def fechar_conexao(self, sock, ip, porta):
 		self.sock = sock
 		tupla_conn = (ip, porta)
-		print "Enviando pacote para fim da conexão."
+		print("Enviando pacote para fim da conexão.")
 		pacote = Pacote()
 		pacote.set([['fin', 1]])
 		raw_pacote = json.dumps(pacote.conteudo)
@@ -254,20 +254,20 @@ class TCP_em_UDP():
 				raw_pacote, conn = self.sock.recvfrom(self.MTU)
 				break
 			except:
-				print "Tempo limite atingido, reenviando pacote FIN"
+				print("Tempo limite atingido, reenviando pacote FIN")
 				self.sock.sendto(raw_pacote, tupla_conn)				
 
 		if pacote.conteudo['flags']['fin'] == 1:
 			self.sock.close()
-			print "Conexão finalizada."
+			print("Conexão finalizada.")
 		else:
-			print "O servidor não respondeu corretamente ao requerimento FIN."
-			print "Deseja forçar a interrupção [s/N]?"
-			if(raw_input().lower() == 's'):
+			print("O servidor não respondeu corretamente ao requerimento FIN.")
+			print("Deseja forçar a interrupção [s/N]?")
+			if(input().lower() == 's'):
 				self.sock.close()
-				print "Conexão terminada a força."
+				print("Conexão terminada a força.")
 			else:
-				print "Tentando finalizar a conexão novamente..."
+				print("Tentando finalizar a conexão novamente...")
 				self.fechar_conexao(sock, ip, porta)
 
 	
@@ -278,7 +278,7 @@ class TCP_em_UDP():
 		self.sock.settimeout(5)
 		pacote = Pacote()
 		montador = []
-		print "Olá! Servidor iniciando na porta", porta
+		print("Olá! Servidor iniciando na porta", porta)
 		
 		# Recebe dados até que uma conexão seja estabelecida e posteriormente finalizada
 		while True:
@@ -302,7 +302,7 @@ class TCP_em_UDP():
 						['port_dest', conn[1]]			
 					])
 				if pacote.conteudo['flags']['syn']:
-					print conn[0], "deseja se conectar."
+					print(conn[0], "deseja se conectar.")
 					self.ack = pacote.conteudo['seq'] + 1
 					self.timeout = min(8, round(4*(time.time() - pacote.conteudo['RTT']), 4))
 					pacote.set([
@@ -315,13 +315,13 @@ class TCP_em_UDP():
 					raw_pacote = json.dumps(pacote.conteudo)
 					self.sock.settimeout(self.timeout)
 					self.sock.sendto(raw_pacote, conn)
-					print "Pacote SYN ACK enviado."
+					print("Pacote SYN ACK enviado.")
 					while True:
 						try:
 							raw_pacote, conn = self.sock.recvfrom(self.MTU)
 							break
 						except:
-							print "Timeout, iniciando a partida lenta"
+							print("Timeout, iniciando a partida lenta")
 							self.ssthresh = self.cwnd * self.MSS/2
 							self.exponencial = True
 							self.cwnd = 1
@@ -329,21 +329,21 @@ class TCP_em_UDP():
 
 					pacote.conteudo = json.loads(raw_pacote)
 					if pacote.conteudo['flags']['ack'] and pacote.conteudo['ack_n'] - 1 == self.seq:
-						print "Conexão estabelecida!"
+						print("Conexão estabelecida!")
 					else:
-						print "Erro ao estabelecer conexão!"
+						print("Erro ao estabelecer conexão!")
 						break
 
 				elif pacote.conteudo['flags']['fin']:
 					raw_pacote = json.dumps(pacote.conteudo)
 					self.sock.sendto(raw_pacote, conn)
-					print "O cliente gostaria de encerrar a conexão."
+					print("O cliente gostaria de encerrar a conexão.")
 					self.sock.close()
-					print "Conexão encerrada."
+					print("Conexão encerrada.")
 					exit()
 				else:
 					if self.ack - 1 == pacote.conteudo['seq']:
-						print "Pacote recebido de tamanho", len(pacote.conteudo['dados'])
+						print("Pacote recebido de tamanho", len(pacote.conteudo['dados']))
 						if pacote.conteudo['flags']['ack']:
 							if self.seq == pacote.conteudo['ack_n'] - 1:
 								self.ack += len(pacote.conteudo['dados'])
@@ -359,9 +359,9 @@ class TCP_em_UDP():
 									])
 								self.buffer.append(pacote.conteudo) #Adicionado
 								self.seq += len(pacote.conteudo['dados'])
-								print "Remontando pacote."
-								print "Numero de bytes após remontagem do pacote:", len("".join(montador)) # Trocar
-								print "Primeiros 100 caracteres: ", "".join(montador)[0:100]
+								print("Remontando pacote.")
+								print("Numero de bytes após remontagem do pacote:", len("".join(montador))) # Trocar
+								print("Primeiros 100 caracteres: ", "".join(montador)[0:100])
 								if self.exponencial:
 									self.cwnd = self.cwnd * 2
 								else:
@@ -377,7 +377,7 @@ class TCP_em_UDP():
 									for i in range(len(self.buffer)):
 										if self.buffer[i]['ack_n'] == pacote.conteudo['ack_n'] - 1:
 											self.indiceBuffer = i
-									print "3 ACKs duplicados. Fast Recovery."
+									print("3 ACKs duplicados. Fast Recovery.")
 						else:
 							self.ack += len(pacote.conteudo['dados'])
 							montador.append(pacote.conteudo['dados'])
@@ -392,7 +392,7 @@ class TCP_em_UDP():
 								self.cwnd = self.cwnd * 2
 							else:
 								self.cwnd = self.cwnd + 1
-							print "O pacote é um segmento, esperando mais dados..."
+							print("O pacote é um segmento, esperando mais dados...")
 
 					else:
 						pacote.set([
@@ -404,14 +404,14 @@ class TCP_em_UDP():
 						self.buffer.append(pacote.conteudo)
 						'''raw_pacote = json.dumps(pacote.conteudo)
 						self.sock.sendto(raw_pacote, conn)'''
-						print "O pacote não era esperado, enviando ACK."
+						print("O pacote não era esperado, enviando ACK.")
 						self.listaACKs.append(self.ack)
 						if self.checaACKs():
 							if self.cwnd > 1:
 								self.cwnd /= 2
 								self.ssthresh = self.cwnd * self.MSS/2
 							self.exponencial = False
-							print "Foram enviados 3 ACKs duplicados, cortando janela."
+							print("Foram enviados 3 ACKs duplicados, cortando janela.")
 							self.listaACKS = []
 
 
@@ -422,7 +422,7 @@ class TCP_em_UDP():
 			cont = 0
 
 			if not self.buffer:
-				print "O buffer está vazio."
+				print("O buffer está vazio.")
 			else:
 				# Loop que envia os dados de acordo com a cwnd
 				while self.indiceBuffer < len(self.buffer):
@@ -434,7 +434,7 @@ class TCP_em_UDP():
 						self.indiceBuffer += 1
 						cont += 1
 
-					print "Enviados", cont, "ACK's"
+					print("Enviados", cont, "ACK's")
 
 
 # Caso o arquivo seja executado diretamente ele cria um servidor local na porta 3883
